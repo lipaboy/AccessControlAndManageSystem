@@ -27,6 +27,11 @@ class AccessController:
         self.getWorkerListRequest = """
             SELECT * 
             FROM WORKER_CARDS"""
+        self.getHistoryRequest = """
+            SELECT WORKER_CARDS.worker_name, place_id, time
+            FROM HISTORY
+            INNER JOIN WORKER_CARDS
+            ON HISTORY.card_key = WORKER_CARDS.key"""
         self.addNewAccessToPlace = """
             INSERT INTO HISTORY 
             (card_key, place_id, time) 
@@ -61,12 +66,18 @@ class AccessController:
         cursor = self.connection.cursor()
         if self.hasAccess(cardKey, placeId):
             cursor.execute(self.addNewAccessToPlace, (cardKey, placeId, datetime.datetime.now()))
+            self.connection.commit()
             return True
         return False
 
     def getWorkerList(self) -> list:
         cursor = self.connection.cursor()
         cursor.execute(self.getWorkerListRequest)
+        return cursor.fetchall()
+
+    def getHistory(self) -> list:
+        cursor = self.connection.cursor()
+        cursor.execute(self.getHistoryRequest)
         return cursor.fetchall()
 
 
@@ -87,14 +98,14 @@ class MainWindow(QMainWindow):
         mainLayout = QHBoxLayout()
 
         listWorkerLayout = QVBoxLayout()
-        mainLayout.addLayout(listWorkerLayout)
+        mainLayout.addLayout(listWorkerLayout, 1)
 
         listWorkerLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
         self.workerListTable = QtWidgets.QTableWidget(0, 2)
         listWorkerLayout.addWidget(self.workerListTable)
 
         historyAccessLayout = QVBoxLayout()
-        mainLayout.addLayout(historyAccessLayout)
+        mainLayout.addLayout(historyAccessLayout, 2)
 
         historyAccessLayout.addWidget(QtWidgets.QLabel("История получения доступа сотрудниками"))
         self.historyAccessTable = QtWidgets.QTableWidget(0, 3)
@@ -102,11 +113,11 @@ class MainWindow(QMainWindow):
 
         self.controller = AccessController()
         self.updateWorkerList()
+        self.updateHistory()
 
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
-
 
     def checkAccess(self):
         if self.controller.hasAccess(int(self.keyEdit.text()), 1) is False:
@@ -126,11 +137,29 @@ class MainWindow(QMainWindow):
         table.setHorizontalHeaderLabels(['Ключ', 'Имя сотрудника'])
         header = table.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         row = 0
         for workerRow in workerList:
-            self.workerListTable.setItem(row, 0, QtWidgets.QTableWidgetItem(str(workerRow[0])))
-            self.workerListTable.setItem(row, 1, QtWidgets.QTableWidgetItem(str(workerRow[1])))
+            table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(workerRow[0])))
+            table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(workerRow[1])))
+            row += 1
+
+    def updateHistory(self):
+        historyList = self.controller.getHistory()
+        table = self.historyAccessTable
+        table.clear()
+        table.setRowCount(len(historyList))
+        table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(['Имя сотрудника', 'Место', 'Время'])
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        row = 0
+        for historyRow in historyList:
+            table.setItem(row, 0, QtWidgets.QTableWidgetItem(historyRow[0]))
+            table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(historyRow[1])))
+            table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(historyRow[2])))
             row += 1
 
     def tryToGetAccess(self):
@@ -144,6 +173,7 @@ class MainWindow(QMainWindow):
         if ok1 and ok2:
             if self.controller.tryToGetAccess(cardKey, placeId):
                 msg.setText("Успешно предоставлен доступ")
+                self.updateHistory()
             else:
                 msg.setText("Доступ запрещён")
             msg.exec()
