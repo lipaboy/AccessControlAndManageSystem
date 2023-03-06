@@ -1,7 +1,8 @@
+import subprocess
 import sys
-import sqlite3
-import datetime
 import AccessController
+import subprocess
+import os
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -26,19 +27,36 @@ class MainWindow(QMainWindow):
         self.getAccessBar.addAction(tryToGetAccessAction)
 
         mainLayout = QHBoxLayout()
-
-        listWorkerLayout = QVBoxLayout()
-        mainLayout.addLayout(listWorkerLayout, 1)
-
-        listWorkerLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
-        self.workerListTable = QtWidgets.QTableWidget()
-        listWorkerLayout.addWidget(self.workerListTable)
-
+        workerListLayout = QVBoxLayout()
+        mainLayout.addLayout(workerListLayout, 1)
         historyAccessLayout = QVBoxLayout()
         mainLayout.addLayout(historyAccessLayout, 1)
 
+        # Список сотрудников
+
+        workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
+        self.workerListTable = QtWidgets.QTableWidget()
+        # self.workerListTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        workerListLayout.addWidget(self.workerListTable)
+
+        workerListToolsLayout = QHBoxLayout()
+        workerListLayout.addLayout(workerListToolsLayout)
+
+        self.addNewWorkerButton = QPushButton("Добавить")
+        self.addNewWorkerButton.clicked.connect(self.addNewRowToWorkerTable)
+        self.editWorkerButton = QPushButton("Редактировать")
+        self.saveNewWorkerButton = QPushButton("Сохранить")
+        self.saveNewWorkerButton.setEnabled(False)
+        self.saveNewWorkerButton.clicked.connect(self.saveNewWorker)
+        workerListToolsLayout.addWidget(self.addNewWorkerButton)
+        workerListToolsLayout.addWidget(self.editWorkerButton)
+        workerListToolsLayout.addWidget(self.saveNewWorkerButton)
+
+        # История доступа
+
         historyAccessLayout.addWidget(QtWidgets.QLabel("История получения доступа сотрудниками"))
         self.historyAccessTable = QtWidgets.QTableWidget()
+        # self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         historyAccessLayout.addWidget(self.historyAccessTable)
 
         self.controller = AccessController.AccessController()
@@ -49,8 +67,31 @@ class MainWindow(QMainWindow):
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
 
-    def addNewWorkerCard(self):
-        self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
+    def addNewRowToWorkerTable(self):
+        # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
+
+        # Запускаем на малине стороннюю виртуальную клавиатуру
+        if os.uname()[4].startswith("arm"):
+            subprocess.Popen(['/usr/bin/florence'])
+
+        table = self.workerListTable
+        newRow = table.rowCount()
+        table.insertRow(newRow)
+
+        self.addNewWorkerButton.setEnabled(False)
+        self.saveNewWorkerButton.setEnabled(True)
+
+    def saveNewWorker(self):
+        table = self.workerListTable
+        row = table.rowCount() - 1
+        places = list(map(int, table.item(row, 2).text().split(",")))
+        self.controller.addNewWorkerCard(int(table.item(row, 0).text()),
+                                         table.item(row, 1).text(),
+                                         places
+                                         )
+
+        self.addNewWorkerButton.setEnabled(True)
+        self.saveNewWorkerButton.setEnabled(False)
 
     def updateWorkerList(self):
         workerList = self.controller.getWorkerList()
@@ -99,9 +140,9 @@ class MainWindow(QMainWindow):
             row += 1
 
     def tryToGetAccess(self):
-        cardKey, ok1 = QtWidgets.QInputDialog\
+        cardKey, ok1 = QtWidgets.QInputDialog \
             .getInt(self, "Доступ", "Введите ключ карты доступа")
-        placeId, ok2 = QtWidgets.QInputDialog\
+        placeId, ok2 = QtWidgets.QInputDialog \
             .getInt(self, "Доступ", "Введите идентификатор места")
 
         msg = QtWidgets.QMessageBox(self)

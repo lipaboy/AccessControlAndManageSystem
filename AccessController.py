@@ -1,4 +1,3 @@
-import sys
 import sqlite3
 import datetime
 
@@ -61,14 +60,15 @@ class AccessController:
     def addNewWorkerCard(self,
                          cardKey: int,
                          workerName: str,
-                         placeId: int):
+                         places: list):
         cursor = self.connection.cursor()
         cursor.execute(
             self.addNewWorkerCardRequest.format(cardKey, workerName)
         )
-        cursor.execute(
-            self.addCardAccessRequest.format(cardKey, placeId)
-        )
+        for placeId in places:
+            cursor.execute(
+                self.addCardAccessRequest.format(cardKey, placeId)
+            )
         self.connection.commit()
 
     def tryToGetAccess(self,
