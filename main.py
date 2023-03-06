@@ -1,6 +1,7 @@
 import sys
 import sqlite3
 import datetime
+import AccessController
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -9,84 +10,13 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
     QPushButton, QVBoxLayout, QHBoxLayout
 
 
-class AccessController:
-    def __init__(self):
-        self.connection = sqlite3.connect("AccessWorkerDB.db")
-        self.checkAccessRequest = """
-            SELECT * 
-            FROM ACCESS_PLACES 
-            WHERE card_key = {} AND place_id = {}"""
-        self.addNewWorkerCardRequest = """
-            INSERT INTO WORKER_CARDS 
-            (key, worker_name) 
-            VALUES('{}', '{}')"""
-        self.addCardAccessRequest = """
-            INSERT INTO ACCESS_PLACES 
-            (card_key, place_id) 
-            VALUES('{}', '{}')"""
-        self.getWorkerListRequest = """
-            SELECT * 
-            FROM WORKER_CARDS"""
-        self.getHistoryRequest = """
-            SELECT WORKER_CARDS.worker_name, place_id, time
-            FROM HISTORY
-            INNER JOIN WORKER_CARDS
-            ON HISTORY.card_key = WORKER_CARDS.key"""
-        self.addNewAccessToPlace = """
-            INSERT INTO HISTORY 
-            (card_key, place_id, time) 
-            VALUES(?, ?, ?)"""
-
-    def hasAccess(self,
-                  cardKey: int,
-                  placeId: int) -> bool:
-        result = self.connection.cursor().execute(
-            self.checkAccessRequest.format(cardKey, placeId)
-        ).fetchone()
-        if result is None:
-            return False
-        return True
-
-    def addNewWorkerCard(self,
-                         cardKey: int,
-                         workerName: str,
-                         placeId: int):
-        cursor = self.connection.cursor()
-        cursor.execute(
-            self.addNewWorkerCardRequest.format(cardKey, workerName)
-        )
-        cursor.execute(
-            self.addCardAccessRequest.format(cardKey, placeId)
-        )
-        self.connection.commit()
-
-    def tryToGetAccess(self,
-                       cardKey: int,
-                       placeId: int) -> bool:
-        cursor = self.connection.cursor()
-        if self.hasAccess(cardKey, placeId):
-            cursor.execute(self.addNewAccessToPlace, (cardKey, placeId, datetime.datetime.now()))
-            self.connection.commit()
-            return True
-        return False
-
-    def getWorkerList(self) -> list:
-        cursor = self.connection.cursor()
-        cursor.execute(self.getWorkerListRequest)
-        return cursor.fetchall()
-
-    def getHistory(self) -> list:
-        cursor = self.connection.cursor()
-        cursor.execute(self.getHistoryRequest)
-        return cursor.fetchall()
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("My App")
-        self.setMinimumSize(QSize(600, 400))
+        self.setMinimumSize(QSize(700, 400))
 
         self.dataEnterDialog = QtWidgets.QInputDialog()
         tryToGetAccessAction = QtWidgets.QAction('Получить доступ', self)
@@ -101,29 +31,23 @@ class MainWindow(QMainWindow):
         mainLayout.addLayout(listWorkerLayout, 1)
 
         listWorkerLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
-        self.workerListTable = QtWidgets.QTableWidget(0, 2)
+        self.workerListTable = QtWidgets.QTableWidget()
         listWorkerLayout.addWidget(self.workerListTable)
 
         historyAccessLayout = QVBoxLayout()
-        mainLayout.addLayout(historyAccessLayout, 2)
+        mainLayout.addLayout(historyAccessLayout, 1)
 
         historyAccessLayout.addWidget(QtWidgets.QLabel("История получения доступа сотрудниками"))
-        self.historyAccessTable = QtWidgets.QTableWidget(0, 3)
+        self.historyAccessTable = QtWidgets.QTableWidget()
         historyAccessLayout.addWidget(self.historyAccessTable)
 
-        self.controller = AccessController()
+        self.controller = AccessController.AccessController()
         self.updateWorkerList()
         self.updateHistory()
 
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
-
-    def checkAccess(self):
-        if self.controller.hasAccess(int(self.keyEdit.text()), 1) is False:
-            self.setWindowTitle("No Access for you")
-        else:
-            self.setWindowTitle("You can pass through")
 
     def addNewWorkerCard(self):
         self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
@@ -133,15 +57,27 @@ class MainWindow(QMainWindow):
         table = self.workerListTable
         table.clear()
         table.setRowCount(len(workerList))
-        table.setColumnCount(2)
-        table.setHorizontalHeaderLabels(['Ключ', 'Имя сотрудника'])
+        table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(['Ключ', 'Имя сотрудника', 'Разрешённые места'])
         header = table.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         row = 0
         for workerRow in workerList:
-            table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(workerRow[0])))
-            table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(workerRow[1])))
+            table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(workerRow.key)))
+            table.setItem(row, 1, QtWidgets.QTableWidgetItem(workerRow.name))
+
+            placesStr = ''
+            size = len(workerRow.places)
+            i = 0
+            for placeId in workerRow.places:
+                placesStr += str(placeId)
+                i += 1
+                if i < size - 1:
+                    placesStr += ","
+
+            table.setItem(row, 2, QtWidgets.QTableWidgetItem(placesStr))
             row += 1
 
     def updateHistory(self):
