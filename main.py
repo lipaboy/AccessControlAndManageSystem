@@ -36,6 +36,10 @@ class MainWindow(QMainWindow):
 
         workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
         self.workerListTable = QtWidgets.QTableWidget()
+        self.savedCell = ''
+        self.mode = 'Edit'
+        self.workerListTable.doubleClicked.connect(self.saveCell)
+        self.workerListTable.cellChanged.connect(self.changeField)
         # self.workerListTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         workerListLayout.addWidget(self.workerListTable)
 
@@ -44,19 +48,18 @@ class MainWindow(QMainWindow):
 
         self.addNewWorkerButton = QPushButton("Добавить")
         self.addNewWorkerButton.clicked.connect(self.addNewRowToWorkerTable)
-        self.editWorkerButton = QPushButton("Редактировать")
         self.saveNewWorkerButton = QPushButton("Сохранить")
+        # self.removeWorkerButton = QPushButton("Сохранить")
         self.saveNewWorkerButton.setEnabled(False)
         self.saveNewWorkerButton.clicked.connect(self.saveNewWorker)
         workerListToolsLayout.addWidget(self.addNewWorkerButton)
-        workerListToolsLayout.addWidget(self.editWorkerButton)
         workerListToolsLayout.addWidget(self.saveNewWorkerButton)
 
         # История доступа
 
         historyAccessLayout.addWidget(QtWidgets.QLabel("История получения доступа сотрудниками"))
         self.historyAccessTable = QtWidgets.QTableWidget()
-        # self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         historyAccessLayout.addWidget(self.historyAccessTable)
 
         self.controller = AccessController.AccessController()
@@ -67,8 +70,27 @@ class MainWindow(QMainWindow):
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
 
+    def saveCell(self):
+        self.savedCell = self.workerListTable.currentItem().text()
+
+    def changeField(self):
+        item = self.workerListTable.currentItem()
+        if item:
+            newValue = item.text()
+            if self.savedCell != newValue:
+                row, column = item.row(), item.column()
+                cardKey = int(self.workerListTable.item(row, column - 1).text())
+                if column == 1:
+                    self.controller.renameWorker(cardKey, newValue)
+                self.updateWorkerList()
+                self.updateHistory()
+
     def addNewRowToWorkerTable(self):
         # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
+
+        self.mode = 'Add'
+        self.workerListTable.cellChanged.disconnect()
+        self.workerListTable.doubleClicked.disconnect()
 
         # Запускаем на малине стороннюю виртуальную клавиатуру
         if os.uname()[4].startswith("arm"):
@@ -90,6 +112,9 @@ class MainWindow(QMainWindow):
                                          places
                                          )
 
+        self.mode = 'Edit'
+        self.workerListTable.cellChanged.connect(self.changeField)
+        self.workerListTable.doubleClicked.connect(self.saveCell)
         self.addNewWorkerButton.setEnabled(True)
         self.saveNewWorkerButton.setEnabled(False)
 
@@ -114,9 +139,9 @@ class MainWindow(QMainWindow):
             i = 0
             for placeId in workerRow.places:
                 placesStr += str(placeId)
-                i += 1
                 if i < size - 1:
                     placesStr += ","
+                i += 1
 
             table.setItem(row, 2, QtWidgets.QTableWidgetItem(placesStr))
             row += 1

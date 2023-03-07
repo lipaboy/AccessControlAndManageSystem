@@ -46,6 +46,10 @@ class AccessController:
             INSERT INTO HISTORY 
             (card_key, place_id, time) 
             VALUES(?, ?, ?)"""
+        self.updateWorkerName = """
+            UPDATE WORKER_CARDS
+            SET worker_name = ?
+            WHERE key = ?"""
 
     def hasAccess(self,
                   cardKey: int,
@@ -102,3 +106,9 @@ class AccessController:
         cursor = self.connection.cursor()
         cursor.execute(self.getHistoryRequest)
         return cursor.fetchall()
+
+    def renameWorker(self,
+                     cardKey: int,
+                     newName: str):
+        self.connection.cursor().execute(self.updateWorkerName, (newName, cardKey))
+        self.connection.commit()
