@@ -7,7 +7,7 @@ import VirtualKeyboard
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, pyqtSlot
 from PyQt5.QtWidgets import QApplication, QMainWindow, \
     QPushButton, QVBoxLayout, QHBoxLayout
 
@@ -40,10 +40,12 @@ class MainWindow(QMainWindow):
 
         workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
         self.workerListTable = QtWidgets.QTableWidget()
-        self.savedCell = ''
         self.mode = 'Edit'
-        self.workerListTable.doubleClicked.connect(self.saveCell)
+        self.savedCellText = ''
+        self.currentEditItem = None
+        self.workerListTable.doubleClicked.connect(self.itemStartEditing)
         self.workerListTable.cellChanged.connect(self.changeField)
+        # self.workerListTable.itemEn
         # self.workerListTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         # AllEditTriggers
         workerListLayout.addWidget(self.workerListTable)
@@ -79,18 +81,34 @@ class MainWindow(QMainWindow):
 
 
         self.keyboard = VirtualKeyboard.KeyboardWidget()
+        self.keyboard.newTextSignal.connect(self.keyboardSlot)
         mainLayout.addWidget(self.keyboard)
 
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
 
+    @pyqtSlot(str)
+    def keyboardSlot(self,
+                     newText: str):
+         if self.currentEditItem is not None:
+            self.currentEditItem.setText(newText)
+            pass
+
+    def itemStartEditing(self):
+        self.currentEditItem = self.workerListTable.currentItem()
+        self.savedCellText = self.currentEditItem.text()
+        self.keyboard.setText(self.savedCellText)
+
+    def itemLeaveEditing(self):
+        self.currentEditItem = None
+
     def setMode(self,
                 newMode: str):
         if newMode == 'Edit':
             self.mode = newMode
             self.workerListTable.cellChanged.connect(self.changeField)
-            self.workerListTable.doubleClicked.connect(self.saveCell)
+            self.workerListTable.doubleClicked.connect(self.itemStartEditing)
             self.addNewWorkerButton.setEnabled(True)
             self.saveNewWorkerButton.setEnabled(False)
             self.cancelAddingNewWorkerButton.setEnabled(False)
@@ -117,14 +135,12 @@ class MainWindow(QMainWindow):
         self.updateWorkerList()
         pass
 
-    def saveCell(self):
-        self.savedCell = self.workerListTable.currentItem().text()
-
     def changeField(self):
         item = self.workerListTable.currentItem()
+        self.itemLeaveEditing()
         if item:
             newValue = item.text()
-            if self.savedCell != newValue:
+            if self.savedCellText != newValue:
                 row, column = item.row(), item.column()
                 cardKey = int(self.workerListTable.item(row, column - 1).text())
                 if column == 1:
@@ -166,9 +182,9 @@ class MainWindow(QMainWindow):
         table.setColumnCount(3)
         table.setHorizontalHeaderLabels(['Ключ', 'Имя сотрудника', 'Разрешённые места'])
         header = table.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         row = 0
         for workerRow in workerList:
             table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(workerRow.key)))
@@ -195,8 +211,8 @@ class MainWindow(QMainWindow):
         table.setHorizontalHeaderLabels(['Имя сотрудника', 'Место', 'Время'])
         header = table.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         row = 0
         for historyRow in historyList:
             table.setItem(row, 0, QtWidgets.QTableWidgetItem(historyRow[0]))

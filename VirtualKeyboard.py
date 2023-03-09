@@ -6,14 +6,22 @@ from PyQt5.QtWidgets import *
 
 
 class KeyboardWidget(QWidget):
+    newTextSignal = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super(KeyboardWidget, self).__init__(parent)
-        self.currentTextBox = None
+        # self.currentTextBox = None
 
         self.signalMapper = QSignalMapper(self)
         self.signalMapper.mapped[int].connect(self.buttonClicked)
 
+        self.currentText = ''
+
         self.initUI()
+
+    def setText(self,
+                newText: str):
+        self.currentText = newText
 
     @pyqtSlot()
     def do_caps(self):
@@ -44,7 +52,7 @@ class KeyboardWidget(QWidget):
         self.text_box.setFont(QFont('Arial', 12))
         # text_box.setFixedHeight(50)
         # self.text_box.setFixedWidth(300)
-        self.layout.addWidget(self.text_box, 0, 0, 1, 10)
+        # self.layout.addWidget(self.text_box, 0, 0, 1, 10)
 
         self.names_caps = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '(', ')',
                            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -150,7 +158,6 @@ class KeyboardWidget(QWidget):
 
     def buttonAdd(self):
         # self.names = self.names_small
-        print("loe")
         positions = [(i + 1, j) for i in range(6) for j in range(10)]
 
         for position, name in zip(positions, self.names):
@@ -165,7 +172,8 @@ class KeyboardWidget(QWidget):
             self.layout.addWidget(button, *position)
 
     def buttonClicked(self, char_ord):
-        txt = self.text_box.toPlainText()
+        # txt = self.text_box.toPlainText()
+        txt = self.currentText
         if char_ord == Qt.Key_Up:
             pass
         elif char_ord == Qt.Key_Down:
@@ -187,24 +195,6 @@ class KeyboardWidget(QWidget):
         else:
             txt += chr(char_ord)
 
-        self.text_box.setText(txt)
-
-
-class Communicate(QObject):
-    mousePressSignal = pyqtSignal()
-
-
-# class cQLineEdit(QTextEdit):
-#     clicked = pyqtSignal()
-#
-#     def __init__(self, widget, name):
-#         super().__init__(widget)
-#         # self.name = name
-#         self.ex = KeyboardWidget()
-#         self.ex.currentTextBox = self
-#         self.ex.currentTextBox.setText(name)
-#         self.ex.text_box.setText(name)
-#
-#     def mousePressEvent(self, QMouseEvent):
-#         self.ex.show()
-#         self.clicked.emit()
+        self.currentText = txt
+        self.newTextSignal.emit(txt)
+        # self.text_box.setText(txt)
