@@ -80,25 +80,20 @@ class MainWindow(QMainWindow):
         self.updateHistory()
 
 
-        self.keyboard = VirtualKeyboard.KeyboardWidget()
-        self.keyboard.newTextSignal.connect(self.keyboardSlot)
-        mainLayout.addWidget(self.keyboard)
+        self.keyboard = VirtualKeyboard.KeyboardWidget(self)
+        # self.keyboard.newTextSignal.connect(self.keyboardSlot)
+        # mainLayout.addWidget(self.keyboard)
 
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
 
-    @pyqtSlot(str)
-    def keyboardSlot(self,
-                     newText: str):
-         if self.currentEditItem is not None:
-            self.currentEditItem.setText(newText)
-            pass
-
     def itemStartEditing(self):
         self.currentEditItem = self.workerListTable.currentItem()
         self.savedCellText = self.currentEditItem.text()
-        self.keyboard.setText(self.savedCellText)
+        self.keyboard.currentTextBox = self.currentEditItem
+        self.keyboard.text_box.setText(self.savedCellText)
+        self.keyboard.show()
 
     def itemLeaveEditing(self):
         self.currentEditItem = None
@@ -150,8 +145,9 @@ class MainWindow(QMainWindow):
 
     def runKeyboard(self):
         # Запускаем на малине стороннюю виртуальную клавиатуру
-        if os.uname()[4].startswith("arm"):
-            subprocess.Popen(['/usr/bin/florence'])
+        # if os.uname()[4].startswith("arm"):
+        #     subprocess.Popen(['/usr/bin/florence'])
+        pass
 
     def addNewRowToWorkerTable(self):
         # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
