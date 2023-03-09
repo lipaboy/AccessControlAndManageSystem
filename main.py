@@ -3,6 +3,7 @@ import sys
 import AccessController
 import subprocess
 import os
+import VirtualKeyboard
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -26,11 +27,14 @@ class MainWindow(QMainWindow):
         self.getAccessBar = self.addToolBar('Получить доступ')
         self.getAccessBar.addAction(tryToGetAccessAction)
 
-        mainLayout = QHBoxLayout()
+        mainLayout = QVBoxLayout()
+        tablesLayout = QHBoxLayout()
+        mainLayout.addLayout(tablesLayout)
+
         workerListLayout = QVBoxLayout()
-        mainLayout.addLayout(workerListLayout, 1)
+        tablesLayout.addLayout(workerListLayout, 1)
         historyAccessLayout = QVBoxLayout()
-        mainLayout.addLayout(historyAccessLayout, 1)
+        tablesLayout.addLayout(historyAccessLayout, 1)
 
         # Список сотрудников
 
@@ -41,6 +45,7 @@ class MainWindow(QMainWindow):
         self.workerListTable.doubleClicked.connect(self.saveCell)
         self.workerListTable.cellChanged.connect(self.changeField)
         # self.workerListTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        # AllEditTriggers
         workerListLayout.addWidget(self.workerListTable)
 
         workerListToolsLayout = QHBoxLayout()
@@ -71,6 +76,10 @@ class MainWindow(QMainWindow):
         self.controller = AccessController.AccessController()
         self.updateWorkerList()
         self.updateHistory()
+
+
+        self.keyboard = VirtualKeyboard.KeyboardWidget()
+        mainLayout.addWidget(self.keyboard)
 
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
