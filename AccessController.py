@@ -50,6 +50,14 @@ class AccessController:
             UPDATE WORKER_CARDS
             SET worker_name = ?
             WHERE key = ?"""
+        self.removeWorkerRequest = """
+            DELETE FROM WORKER_CARDS
+            WHERE key = {} """
+
+    def removeWorker(self,
+                     cardKey: int):
+        self.connection.cursor().execute(self.removeWorkerRequest.format(cardKey))
+        self.connection.commit()
 
     def hasAccess(self,
                   cardKey: int,

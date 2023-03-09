@@ -49,11 +49,17 @@ class MainWindow(QMainWindow):
         self.addNewWorkerButton = QPushButton("Добавить")
         self.addNewWorkerButton.clicked.connect(self.addNewRowToWorkerTable)
         self.saveNewWorkerButton = QPushButton("Сохранить")
-        # self.removeWorkerButton = QPushButton("Сохранить")
         self.saveNewWorkerButton.setEnabled(False)
         self.saveNewWorkerButton.clicked.connect(self.saveNewWorker)
+        self.removeWorkerButton = QPushButton("Удалить")
+        self.removeWorkerButton.clicked.connect(self.removeWorker)
+        self.cancelAddingNewWorkerButton = QPushButton("Отмена")
+        self.cancelAddingNewWorkerButton.setEnabled(False)
+        self.cancelAddingNewWorkerButton.clicked.connect(self.cancelAdding)
         workerListToolsLayout.addWidget(self.addNewWorkerButton)
         workerListToolsLayout.addWidget(self.saveNewWorkerButton)
+        workerListToolsLayout.addWidget(self.cancelAddingNewWorkerButton)
+        workerListToolsLayout.addWidget(self.removeWorkerButton)
 
         # История доступа
 
@@ -70,6 +76,38 @@ class MainWindow(QMainWindow):
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
 
+    def setMode(self,
+                newMode: str):
+        if newMode == 'Edit':
+            self.mode = newMode
+            self.workerListTable.cellChanged.connect(self.changeField)
+            self.workerListTable.doubleClicked.connect(self.saveCell)
+            self.addNewWorkerButton.setEnabled(True)
+            self.saveNewWorkerButton.setEnabled(False)
+            self.cancelAddingNewWorkerButton.setEnabled(False)
+            self.removeWorkerButton.setEnabled(True)
+        elif newMode == 'Add':
+            self.mode = newMode
+            self.workerListTable.cellChanged.disconnect()
+            self.workerListTable.doubleClicked.disconnect()
+            self.addNewWorkerButton.setEnabled(False)
+            self.saveNewWorkerButton.setEnabled(True)
+            self.cancelAddingNewWorkerButton.setEnabled(True)
+            self.removeWorkerButton.setEnabled(False)
+        pass
+
+    def cancelAdding(self):
+        self.workerListTable.removeRow(self.workerListTable.rowCount() - 1)
+        self.setMode('Edit')
+        pass
+
+    def removeWorker(self):
+        row = self.workerListTable.currentItem().row()
+        cardKey = int(self.workerListTable.item(row, 0).text())
+        self.controller.removeWorker(cardKey)
+        self.updateWorkerList()
+        pass
+
     def saveCell(self):
         self.savedCell = self.workerListTable.currentItem().text()
 
@@ -85,38 +123,31 @@ class MainWindow(QMainWindow):
                 self.updateWorkerList()
                 self.updateHistory()
 
-    def addNewRowToWorkerTable(self):
-        # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
-
-        self.mode = 'Add'
-        self.workerListTable.cellChanged.disconnect()
-        self.workerListTable.doubleClicked.disconnect()
-
+    def runKeyboard(self):
         # Запускаем на малине стороннюю виртуальную клавиатуру
         if os.uname()[4].startswith("arm"):
             subprocess.Popen(['/usr/bin/florence'])
 
+    def addNewRowToWorkerTable(self):
+        # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
+        self.setMode('Add')
+        self.runKeyboard()
         table = self.workerListTable
         newRow = table.rowCount()
         table.insertRow(newRow)
 
-        self.addNewWorkerButton.setEnabled(False)
-        self.saveNewWorkerButton.setEnabled(True)
-
     def saveNewWorker(self):
         table = self.workerListTable
         row = table.rowCount() - 1
-        places = list(map(int, table.item(row, 2).text().split(",")))
+        if not table.item(row, 2) is None:
+            places = list(map(int, table.item(row, 2).text().split(",")))
+        else:
+            places = []
         self.controller.addNewWorkerCard(int(table.item(row, 0).text()),
                                          table.item(row, 1).text(),
                                          places
                                          )
-
-        self.mode = 'Edit'
-        self.workerListTable.cellChanged.connect(self.changeField)
-        self.workerListTable.doubleClicked.connect(self.saveCell)
-        self.addNewWorkerButton.setEnabled(True)
-        self.saveNewWorkerButton.setEnabled(False)
+        self.setMode('Edit')
 
     def updateWorkerList(self):
         workerList = self.controller.getWorkerList()
@@ -165,6 +196,8 @@ class MainWindow(QMainWindow):
             row += 1
 
     def tryToGetAccess(self):
+        self.runKeyboard()
+
         cardKey, ok1 = QtWidgets.QInputDialog \
             .getInt(self, "Доступ", "Введите ключ карты доступа")
         placeId, ok2 = QtWidgets.QInputDialog \
