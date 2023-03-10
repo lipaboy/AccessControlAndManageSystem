@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
         if newMode == 'Edit':
             self.mode = newMode
             self.workerListTable.cellChanged.connect(self.changeField)
-            self.workerListTable.doubleClicked.connect(self.itemStartEditing)
+            # self.workerListTable.doubleClicked.connect(self.itemStartEditing)
             self.addNewWorkerButton.setEnabled(True)
             self.saveNewWorkerButton.setEnabled(False)
             self.cancelAddingNewWorkerButton.setEnabled(False)
@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
         elif newMode == 'Add':
             self.mode = newMode
             self.workerListTable.cellChanged.disconnect()
-            self.workerListTable.doubleClicked.disconnect()
+            # self.workerListTable.doubleClicked.disconnect()
             self.addNewWorkerButton.setEnabled(False)
             self.saveNewWorkerButton.setEnabled(True)
             self.cancelAddingNewWorkerButton.setEnabled(True)
@@ -156,6 +156,8 @@ class MainWindow(QMainWindow):
         table = self.workerListTable
         newRow = table.rowCount()
         table.insertRow(newRow)
+        for i in range(0, table.columnCount() - 1):
+            table.setItem(newRow, i, QtWidgets.QTableWidgetItem(''))
 
     def saveNewWorker(self):
         table = self.workerListTable
