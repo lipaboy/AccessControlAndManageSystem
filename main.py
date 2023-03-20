@@ -14,11 +14,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, \
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, dbFilePath, isFullScreen):
         super().__init__()
 
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Система контроля и управления доступом")
         self.setMinimumSize(QSize(700, 400))
+        self.m_isFullScreen = isFullScreen
 
         self.dataEnterDialog = QtWidgets.QInputDialog()
         tryToGetAccessAction = QtWidgets.QAction('Получить доступ', self)
@@ -75,12 +76,11 @@ class MainWindow(QMainWindow):
         self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         historyAccessLayout.addWidget(self.historyAccessTable)
 
-        self.controller = AccessController.AccessController()
+        self.controller = AccessController.AccessController(dbFilePath)
         self.updateWorkerList()
         self.updateHistory()
 
-
-        self.keyboard = VirtualKeyboard.KeyboardWidget(self)
+        self.keyboard = VirtualKeyboard.KeyboardWidget(self, isFullScreen)
         # self.keyboard.newTextSignal.connect(self.keyboardSlot)
         # mainLayout.addWidget(self.keyboard)
 
@@ -91,9 +91,12 @@ class MainWindow(QMainWindow):
     def itemStartEditing(self):
         self.currentEditItem = self.workerListTable.currentItem()
         self.savedCellText = self.currentEditItem.text()
-        self.keyboard.currentTextBox = self.currentEditItem
-        self.keyboard.text_box.setText(self.savedCellText)
-        self.keyboard.show()
+        self.keyboard.m_externalTextBox = self.currentEditItem
+        self.keyboard.m_internalTextBox.setText(self.savedCellText)
+        if self.m_isFullScreen:
+            self.keyboard.showFullScreen()
+        else:
+            self.keyboard.show()
 
     def itemLeaveEditing(self):
         self.currentEditItem = None
@@ -236,11 +239,20 @@ class MainWindow(QMainWindow):
                 msg.setText("Доступ запрещён")
             msg.exec()
 
-
+# __main__
 
 app = QApplication(sys.argv)
 
-window = MainWindow()
-window.show()
+if len(sys.argv) < 2:
+    print('Не передан аргумент: имя файла (.db)')
+
+dbFileName = sys.argv[1]
+if not os.path.exists(dbFileName):
+    print('Такого файла не существует на диске')
+
+isFullScreen = False if len(sys.argv) < 3 else (sys.argv[2] == 'fullscreen')
+
+window = MainWindow(dbFileName, True)
+window.showFullScreen() if isFullScreen else window.show()
 
 app.exec()

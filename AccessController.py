@@ -1,3 +1,4 @@
+import os.path
 import sqlite3
 import datetime
 
@@ -10,8 +11,20 @@ class WorkerData:
 
 
 class AccessController:
-    def __init__(self):
-        self.connection = sqlite3.connect("AccessWorkerDB.db")
+    def checkConnection(self):
+        try:
+            self.connection.cursor()
+            return True
+        except Exception as ex:
+            return False
+
+    def __init__(self, dbFilePath):
+        filename = dbFilePath
+        # if not os.path.exists(filename):
+        #     filename = '~/Desktop/' + filename
+
+        self.connection = sqlite3.connect(filename)
+
         self.checkAccessRequest = """
             SELECT * 
             FROM ACCESS_PLACES 
