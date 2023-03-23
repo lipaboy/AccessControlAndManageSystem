@@ -3,6 +3,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import *
+from Utils import *
 
 
 class KeyboardWidget(QDialog):
@@ -14,19 +15,9 @@ class KeyboardWidget(QDialog):
         self.signalMapper.mapped[int].connect(self.buttonClicked)
 
         self.FONT_SIZE = 18 if not isFullScreen else 30
-        self.mode = 'Letters'
-        self.lang = 'ru'
         self.m_isFullScreen = isFullScreen
 
         self.initUI()
-
-    @pyqtSlot()
-    def showKeyboardLayout(self,
-                           widget: QWidget):
-        self.currentWidget.setVisible(False)
-        self.currentWidget = widget
-        self.currentWidget.setVisible(True)
-        self.currentWidget.setFocus()
 
     def initUI(self):
         self.layout = QVBoxLayout()
@@ -138,6 +129,14 @@ class KeyboardWidget(QDialog):
 
         self.setLayout(self.layout)
 
+    @pyqtSlot()
+    def showKeyboardLayout(self,
+                           widget: QWidget):
+        self.currentWidget.setVisible(False)
+        self.currentWidget = widget
+        self.currentWidget.setVisible(True)
+        self.currentWidget.setFocus()
+
     def createKeyboardLayout(self,
                              symbolNames: list,
                              isCaps: bool,
@@ -148,40 +147,31 @@ class KeyboardWidget(QDialog):
 
         # Register button
         changeRegisterButton = QPushButton('Обыч' if isCaps else 'Загл')
-        changeRegisterButton.clicked.connect(registerChangeFunc)
-        # self.cap_button.setFixedHeight(25)
         changeRegisterButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         changeRegisterButton.setFont(QFont('Arial', self.FONT_SIZE))
-        changeRegisterButton.clicked.connect(self.signalMapper.map)
-        # self.cap_button.setFixedWidth(60)
+        changeRegisterButton.clicked.connect(registerChangeFunc)
 
         # Language button
         langButton = QPushButton('Язык')
-        # enter_button.setFixedHeight(25)
         langButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         langButton.setFont(QFont('Arial', self.FONT_SIZE))
         langButton.clicked.connect(langChangeFunc)
-        # enter_button.setFixedWidth(60)
 
         # Space button
         spaceButton = QPushButton('Пробел')
-        # space_button.setFixedHeight(25)
         spaceButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         spaceButton.setFont(QFont('Arial', self.FONT_SIZE))
         spaceButton.KEY_CHAR = Qt.Key_Space
         spaceButton.clicked.connect(self.signalMapper.map)
         self.signalMapper.setMapping(spaceButton, spaceButton.KEY_CHAR)
-        # space_button.setFixedWidth(85)
 
         # Back button
         eraseButton = QPushButton('Стереть')
-        # back_button.setFixedHeight(25)
         eraseButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         eraseButton.setFont(QFont('Arial', self.FONT_SIZE))
         eraseButton.KEY_CHAR = Qt.Key_Backspace
         eraseButton.clicked.connect(self.signalMapper.map)
         self.signalMapper.setMapping(eraseButton, eraseButton.KEY_CHAR)
-        # back_button.setFixedWidth(60)
 
         row = 0
         maxLetters = 0
@@ -233,7 +223,7 @@ class KeyboardWidget(QDialog):
                 int(screenSize.width() / (maxLetters if maxLetters > 0 else 15)) - 10,
                 int((screenSize.height()) / 6))
                 # 170)
-            font = QFont()
+            font = QFont('Arial')
             font.setPixelSize(min(buttonSize.width() - 20, buttonSize.height() - 20))
             for but in buttonList:
                 but.setFixedSize(buttonSize)
@@ -241,21 +231,17 @@ class KeyboardWidget(QDialog):
 
         # Done button
         applyButton = QPushButton('ОК')
-        # done_button.setFixedHeight(25)
         applyButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         applyButton.setFont(QFont('Arial', self.FONT_SIZE))
         applyButton.KEY_CHAR = Qt.Key_Home
         applyButton.clicked.connect(self.signalMapper.map)
         self.signalMapper.setMapping(applyButton, applyButton.KEY_CHAR)
-        # done_button.setFixedWidth(60)
 
         # Done button
         cancelButton = QPushButton('Отмена')
-        # done_button.setFixedHeight(25)
         cancelButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         cancelButton.setFont(QFont('Arial', self.FONT_SIZE))
         cancelButton.clicked.connect(lambda: self.hide())
-        # done_button.setFixedWidth(60)
 
         hBox = QHBoxLayout()
         hBox.addWidget(langButton, 1)
@@ -263,6 +249,21 @@ class KeyboardWidget(QDialog):
         hBox.addWidget(cancelButton, 2)
         hBox.addWidget(applyButton, 2)
         layout.addLayout(hBox)
+
+        traverseAllWidgetsInLayoutRec(
+            layout,
+            lambda w: w.setStyleSheet("""
+                    QPushButton 
+                    {
+                        color: rgb(255, 255, 255);
+                        background-color: qlineargradient(
+                            x1: 0, y1: 0.2, x2: 1, y2: 1,
+                            stop: 0 rgba(%s, %s, %s, 255), 
+                            stop: 1 rgba(%s, %s, %s, 255));
+                        border-radius: 20px
+                        border: 2px solid black
+                    }
+                    """ % (63, 69, 75, 53, 58, 60)))
 
         return widget
 
