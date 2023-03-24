@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QSize, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, \
     QPushButton, QVBoxLayout, QHBoxLayout, QSizePolicy
+from PyQt5.QtGui import QFont
 
 
 class MainWindow(QMainWindow):
@@ -40,9 +41,9 @@ class MainWindow(QMainWindow):
         mainLayout.addLayout(tablesLayout)
 
         workerListLayout = QVBoxLayout()
-        tablesLayout.addLayout(workerListLayout, 3)
+        tablesLayout.addLayout(workerListLayout, 5)
         historyAccessLayout = QVBoxLayout()
-        tablesLayout.addLayout(historyAccessLayout, 2)
+        tablesLayout.addLayout(historyAccessLayout, 4)
 
         # Список сотрудников
 
@@ -82,8 +83,14 @@ class MainWindow(QMainWindow):
         workerListToolsLayout.addWidget(self.removeWorkerButton)
         Utils.traverseAllWidgetsInLayoutRec(
             workerListToolsLayout,
-            lambda but: but.setSizePolicy(QSizePolicy.Minimum,
+            lambda but: 
+                but.setSizePolicy(QSizePolicy.Minimum,
                                           QSizePolicy.Expanding))
+
+        Utils.traverseAllWidgetsInLayoutRec(
+            workerListToolsLayout,
+            lambda but: 
+                but.setFont(QFont('Arial', 18)))
 
         # История доступа
 
