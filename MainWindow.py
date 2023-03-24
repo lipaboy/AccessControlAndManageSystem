@@ -17,11 +17,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Система контроля и управления доступом")
         self.setMinimumSize(QSize(700, 400))
         self.m_isFullScreen = isFullScreen
-        bc = Globals.WINDOW_BACKGROUND.toRgb()
         self.setStyleSheet("""
             color: rgb(255, 255, 255);
-            background-color: rgb(%s, %s, %s);
-            """ % (bc.red(), bc.green(), bc.blue()))
+            background-color: %s;
+            """ % (Globals.toStr(Globals.WINDOW_BACKGROUND)))
         self.setPalette(QtGui.QPalette(Globals.WINDOW_BACKGROUND))
 
         # Toolbar
@@ -48,6 +47,9 @@ class MainWindow(QMainWindow):
 
         workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
         self.workerListTable = QtWidgets.QTableWidget()
+        self.workerListTable.setStyleSheet(
+            """background-color: %s;"""
+            % (Globals.toStr(Globals.TABLE_COLOR)))
         self.mode = 'Edit'
         self.savedCellText = ''
         self.currentEditItem = None

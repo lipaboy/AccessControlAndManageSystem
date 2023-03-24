@@ -42,6 +42,8 @@ class KeyboardWidget(QDialog):
         self.setAutoFillBackground(True)
         self.m_internalTextBox = QLineEdit()
         self.m_internalTextBox.setFont(QFont('Arial', self.FONT_SIZE))
+        self.m_internalTextBox.setStyleSheet("""
+            border: 2px solid %s;""" % (Globals.toStr(Globals.BORDER_COLOR)))
         # text_box.setFixedHeight(50)
         # self.text_box.setFixedWidth(300)
 
