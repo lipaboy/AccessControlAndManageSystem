@@ -253,17 +253,13 @@ class KeyboardWidget(QDialog):
         traverseAllWidgetsInLayoutRec(
             layout,
             lambda w: w.setStyleSheet("""
-                    QPushButton 
-                    {
                         color: rgb(255, 255, 255);
                         background-color: qlineargradient(
                             x1: 0, y1: 0.2, x2: 1, y2: 1,
                             stop: 0 rgba(%s, %s, %s, 255), 
                             stop: 1 rgba(%s, %s, %s, 255));
-                        border-radius: 20px
-                        border: 2px solid black
-                    }
-                    """ % (63, 69, 75, 53, 58, 60)))
+                            border: 2px solid black
+                    """ % (105, 109, 120, 63, 69, 75)))
 
         return widget
 
