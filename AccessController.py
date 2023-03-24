@@ -20,8 +20,6 @@ class AccessController:
 
     def __init__(self, dbFilePath):
         filename = dbFilePath
-        # if not os.path.exists(filename):
-        #     filename = '~/Desktop/' + filename
 
         self.connection = sqlite3.connect(filename)
 

@@ -9,6 +9,14 @@ from Utils import *
 class KeyboardWidget(QDialog):
     def __init__(self, parent=None, isFullScreen=False):
         super(KeyboardWidget, self).__init__(parent)
+
+        self.enCapsKeys = None
+        self.enSmallKeys = None
+        self.ruCapsKeys = None
+        self.ruSmallKeys = None
+        self.mainLayout = None
+        self.m_internalTextBox = None
+        self.symKeys = None
         self.m_externalTextBox = None
 
         self.signalMapper = QSignalMapper(self)
@@ -17,10 +25,15 @@ class KeyboardWidget(QDialog):
         self.FONT_SIZE = 18 if not isFullScreen else 30
         self.m_isFullScreen = isFullScreen
 
+        self.m_currentKeyLayout = None
+        self.m_previousKeyLayout = None
+
+        palette = QPalette(QColor(41, 47, 52))
+        self.setPalette(palette)
         self.initUI()
 
     def initUI(self):
-        self.layout = QVBoxLayout()
+        self.mainLayout = QVBoxLayout()
 
         # p = self.palette()
         # p.setColor(self.backgroundRole(),Qt.white)
@@ -31,77 +44,90 @@ class KeyboardWidget(QDialog):
         # text_box.setFixedHeight(50)
         # self.text_box.setFixedWidth(300)
 
-        self.layout.addWidget(self.m_internalTextBox)
+        self.mainLayout.addWidget(self.m_internalTextBox)
 
-        self.digitsBase = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+        digitsBase = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
-        self.namesCapsEn = \
-            [
-                ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-                ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-                ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
-            ]
-        self.namesCapsEn.insert(0, self.digitsBase)
+        # Нельзя переместить раскладки клавиш из полей класса в локальные переменные
 
-        self.namesSmallEn = \
-            [
-                ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-                ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-                ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
-            ]
-        self.namesSmallEn.insert(0, self.digitsBase)
-
-        self.namesCapsRu = \
-            [
-                ['Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ъ'],
-                ['Ф', 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э'],
-                ['Я', 'Ч', 'С', 'М', 'И', 'Т', 'Ь', 'Б', 'Ю'],
-            ]
-        self.namesCapsRu.insert(0, self.digitsBase)
-        self.namesSmallRu = \
+        namesSmallRu = \
             [
                 ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
                 ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
                 ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю'],
             ]
-        self.namesSmallRu.insert(0, self.digitsBase)
-        self.names_sym = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.',
-                          '~', '`', '@', '#', '$', '%', '^', '&&', '*', '(',
-                          ')', '_', '-', '+', '=', '|', '[', ']', '{', '}', "'",
-                          '"', '<', '>', '?', '\\', '/', '!']
+        namesSmallRu.insert(0, digitsBase)
+        self.ruSmallKeys = self.createKeyboardLayout(
+            namesSmallRu, False,
+            lambda: self.showKeyLayout(self.ruCapsKeys),
+            lambda: self.showKeyLayout(self.enSmallKeys)
+        )
+        self.mainLayout.addWidget(self.ruSmallKeys)
+        self.ruSmallKeys.setVisible(False)
 
+        namesCapsRu = \
+            [
+                ['Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ъ'],
+                ['Ф', 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э'],
+                ['Я', 'Ч', 'С', 'М', 'И', 'Т', 'Ь', 'Б', 'Ю'],
+            ]
+        namesCapsRu.insert(0, digitsBase)
+        self.ruCapsKeys = self.createKeyboardLayout(
+            namesCapsRu, True,
+            lambda: self.showKeyLayout(self.ruSmallKeys),
+            lambda: self.showKeyLayout(self.enCapsKeys)
+        )
+        self.mainLayout.addWidget(self.ruCapsKeys)
+        self.ruCapsKeys.setVisible(False)
 
-        self.widgetSmallRu = self.createKeyboardLayout(
-            self.namesSmallRu, False,
-            lambda: self.showKeyboardLayout(self.widgetCapsRu),
-            lambda: self.showKeyboardLayout(self.widgetSmallEn)
+        namesSmallEn = \
+            [
+                ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+                ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+                ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
+            ]
+        namesSmallEn.insert(0, digitsBase)
+        self.enSmallKeys = self.createKeyboardLayout(
+            namesSmallEn, False,
+            lambda: self.showKeyLayout(self.enCapsKeys),
+            lambda: self.showKeyLayout(self.ruSmallKeys)
         )
-        self.layout.addWidget(self.widgetSmallRu)
-        self.widgetSmallRu.setVisible(False)
-        self.widgetCapsRu = self.createKeyboardLayout(
-            self.namesCapsRu, True,
-            lambda: self.showKeyboardLayout(self.widgetSmallRu),
-            lambda: self.showKeyboardLayout(self.widgetCapsEn)
-        )
-        self.layout.addWidget(self.widgetCapsRu)
-        self.widgetCapsRu.setVisible(False)
-        self.widgetSmallEn = self.createKeyboardLayout(
-            self.namesSmallEn, False,
-            lambda: self.showKeyboardLayout(self.widgetCapsEn),
-            lambda: self.showKeyboardLayout(self.widgetSmallRu)
-        )
-        self.layout.addWidget(self.widgetSmallEn)
-        self.widgetSmallEn.setVisible(False)
-        self.widgetCapsEn = self.createKeyboardLayout(
-            self.namesCapsEn, True,
-            lambda: self.showKeyboardLayout(self.widgetSmallEn),
-            lambda: self.showKeyboardLayout(self.widgetCapsRu)
-        )
-        self.layout.addWidget(self.widgetCapsEn)
-        self.widgetCapsEn.setVisible(False)
+        self.mainLayout.addWidget(self.enSmallKeys)
+        self.enSmallKeys.setVisible(False)
 
-        self.currentWidget = self.widgetSmallRu
-        self.currentWidget.setVisible(True)
+        namesCapsEn = \
+            [
+                ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+                ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+                ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+            ]
+        namesCapsEn.insert(0, digitsBase)
+        self.enCapsKeys = self.createKeyboardLayout(
+            namesCapsEn, True,
+            lambda: self.showKeyLayout(self.enSmallKeys),
+            lambda: self.showKeyLayout(self.ruCapsKeys)
+        )
+        self.mainLayout.addWidget(self.enCapsKeys)
+        self.enCapsKeys.setVisible(False)
+
+        namesSym = \
+            [
+                ['~', '`', '@', '#', '$', '%', '^', '&&', '*', '('],
+                [')', '_', '-', '+', '=', '|', '[', ']', '{', '}', "'"],
+                ['"', '<', '>', '?', '\\', '/', '!'],
+            ]
+        namesSym.insert(0, digitsBase)
+        self.symKeys = self.createKeyboardLayout(
+            namesSym, True,
+            lambda: None,
+            lambda: None,
+            True,
+            lambda selfRef: selfRef.showKeyLayout(selfRef.m_previousKeyLayout)
+        )
+        self.mainLayout.addWidget(self.symKeys)
+        self.symKeys.setVisible(False)
+
+        self.showKeyLayout(self.ruSmallKeys)
 
         # Cancel button
         clear_button = QPushButton('Очистить')
@@ -113,35 +139,29 @@ class KeyboardWidget(QDialog):
         self.signalMapper.setMapping(clear_button, clear_button.KEY_CHAR)
         # clear_button.setFixedWidth(60)
 
-        sym_button = QPushButton('Симв')
-        self.symbolButton = sym_button
-        # sym_button.setFixedHeight(25)
-        # sym_button.setFixedWidth(60)
-        sym_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        sym_button.setFont(QFont('Arial', self.FONT_SIZE))
-        sym_button.KEY_CHAR = Qt.Key_Down
-        # self.layout.addWidget(sym_button, 5, 9, 1, 1)
-        # self.layout.addWidget(sym_button, 5, 15, 1, 2)
-        sym_button.clicked.connect(self.signalMapper.map)
-        self.signalMapper.setMapping(sym_button, sym_button.KEY_CHAR)
-
         self.setGeometry(0, 0, 480, 300)
 
-        self.setLayout(self.layout)
+        self.setLayout(self.mainLayout)
 
     @pyqtSlot()
-    def showKeyboardLayout(self,
-                           widget: QWidget):
-        self.currentWidget.setVisible(False)
-        self.currentWidget = widget
-        self.currentWidget.setVisible(True)
-        self.currentWidget.setFocus()
+    def showKeyLayout(self,
+                      widget: QWidget):
+        self.m_previousKeyLayout = self.m_currentKeyLayout
+        if self.m_currentKeyLayout is not None:
+            self.m_currentKeyLayout.setVisible(False)
+        self.m_currentKeyLayout = widget
+        self.m_currentKeyLayout.setVisible(True)
+        self.m_currentKeyLayout.setFocus()
 
     def createKeyboardLayout(self,
-                             symbolNames: list,
+                             keyNames: list,
                              isCaps: bool,
                              registerChangeFunc,
-                             langChangeFunc):
+                             langChangeFunc,
+                             isSymb: bool = False,
+                             symbolChangeLayoutFunc=
+                             lambda selfRef:
+                             selfRef.showKeyLayout(selfRef.symKeys)):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
@@ -176,7 +196,7 @@ class KeyboardWidget(QDialog):
         row = 0
         maxLetters = 0
         buttonList = []
-        for namesRow in symbolNames:
+        for namesRow in keyNames:
             hBox = QHBoxLayout()
             layout.addLayout(hBox)
             # hBox.setContentsMargins(50, 0, 50, 0)
@@ -222,7 +242,7 @@ class KeyboardWidget(QDialog):
             buttonSize = QSize(
                 int(screenSize.width() / (maxLetters if maxLetters > 0 else 15)) - 10,
                 int((screenSize.height()) / 6))
-                # 170)
+            # 170)
             font = QFont('Arial')
             font.setPixelSize(min(buttonSize.width() - 20, buttonSize.height() - 20))
             for but in buttonList:
@@ -243,7 +263,13 @@ class KeyboardWidget(QDialog):
         cancelButton.setFont(QFont('Arial', self.FONT_SIZE))
         cancelButton.clicked.connect(lambda: self.hide())
 
+        symbolButton = QPushButton('Симв' if isSymb else 'Букв')
+        symbolButton.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        symbolButton.setFont(QFont('Arial', self.FONT_SIZE))
+        symbolButton.clicked.connect(lambda: symbolChangeLayoutFunc(self))
+
         hBox = QHBoxLayout()
+        hBox.addWidget(symbolButton, 1)
         hBox.addWidget(langButton, 1)
         hBox.addWidget(spaceButton, 10)
         hBox.addWidget(cancelButton, 2)
