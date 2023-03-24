@@ -1,7 +1,8 @@
 import AccessController
+import Globals
 import VirtualKeyboard
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QSize, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, \
     QPushButton, QVBoxLayout, QHBoxLayout
@@ -11,9 +12,19 @@ class MainWindow(QMainWindow):
     def __init__(self, dbFilePath, isFullScreen):
         super().__init__()
 
+        # UI окна
+
         self.setWindowTitle("Система контроля и управления доступом")
         self.setMinimumSize(QSize(700, 400))
         self.m_isFullScreen = isFullScreen
+        bc = Globals.WINDOW_BACKGROUND.toRgb()
+        self.setStyleSheet("""
+            color: rgb(255, 255, 255);
+            background-color: rgb(%s, %s, %s);
+            """ % (bc.red(), bc.green(), bc.blue()))
+        self.setPalette(QtGui.QPalette(Globals.WINDOW_BACKGROUND))
+
+        # Toolbar
 
         self.dataEnterDialog = QtWidgets.QInputDialog()
         tryToGetAccessAction = QtWidgets.QAction('Получить доступ', self)
@@ -21,6 +32,8 @@ class MainWindow(QMainWindow):
 
         self.getAccessBar = self.addToolBar('Получить доступ')
         self.getAccessBar.addAction(tryToGetAccessAction)
+
+        # Main layouts
 
         mainLayout = QVBoxLayout()
         tablesLayout = QHBoxLayout()

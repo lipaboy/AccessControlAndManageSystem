@@ -3,6 +3,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import *
+
+import Globals
 from Utils import *
 
 class KeyboardWidget(QDialog):
@@ -27,7 +29,7 @@ class KeyboardWidget(QDialog):
         self.m_currentKeyLayout = None
         self.m_previousKeyLayout = None
 
-        palette = QPalette(QColor(41, 47, 52))
+        palette = QPalette(Globals.WINDOW_BACKGROUND)
         self.setPalette(palette)
         self.initUI()
 
