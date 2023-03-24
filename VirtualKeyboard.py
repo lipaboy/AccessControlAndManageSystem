@@ -5,7 +5,6 @@ from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import *
 from Utils import *
 
-
 class KeyboardWidget(QDialog):
     def __init__(self, parent=None, isFullScreen=False):
         super(KeyboardWidget, self).__init__(parent)
@@ -202,7 +201,7 @@ class KeyboardWidget(QDialog):
             # hBox.setContentsMargins(50, 0, 50, 0)
             # hBox.setSpacing(0)
 
-            if row == 3:
+            if row == 3 and not isSymb:
                 hBox.addWidget(changeRegisterButton, 2)
             else:
                 hBox.addStretch(1)
@@ -270,7 +269,8 @@ class KeyboardWidget(QDialog):
 
         hBox = QHBoxLayout()
         hBox.addWidget(symbolButton, 1)
-        hBox.addWidget(langButton, 1)
+        if not isSymb:
+            hBox.addWidget(langButton, 1)
         hBox.addWidget(spaceButton, 10)
         hBox.addWidget(cancelButton, 2)
         hBox.addWidget(applyButton, 2)
