@@ -1,11 +1,12 @@
 import AccessController
 import Globals
+import Utils
 import VirtualKeyboard
 
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QSize, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, \
-    QPushButton, QVBoxLayout, QHBoxLayout
+    QPushButton, QVBoxLayout, QHBoxLayout, QSizePolicy
 
 
 class MainWindow(QMainWindow):
@@ -39,13 +40,13 @@ class MainWindow(QMainWindow):
         mainLayout.addLayout(tablesLayout)
 
         workerListLayout = QVBoxLayout()
-        tablesLayout.addLayout(workerListLayout, 1)
+        tablesLayout.addLayout(workerListLayout, 3)
         historyAccessLayout = QVBoxLayout()
-        tablesLayout.addLayout(historyAccessLayout, 1)
+        tablesLayout.addLayout(historyAccessLayout, 2)
 
         # Список сотрудников
 
-        workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"))
+        workerListLayout.addWidget(QtWidgets.QLabel("Список сотрудников"), 0)
         self.workerListTable = QtWidgets.QTableWidget()
         self.workerListTable.setStyleSheet(
             """background-color: %s;"""
@@ -58,10 +59,11 @@ class MainWindow(QMainWindow):
         # self.workerListTable.itemEn
         # self.workerListTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         # AllEditTriggers
-        workerListLayout.addWidget(self.workerListTable)
+        workerListLayout.addWidget(self.workerListTable, 5)
 
+        # workerListLayout.addStretch(2)
         workerListToolsLayout = QHBoxLayout()
-        workerListLayout.addLayout(workerListToolsLayout)
+        workerListLayout.addLayout(workerListToolsLayout, 1)
 
         self.addNewWorkerButton = QPushButton("Добавить")
         self.addNewWorkerButton.clicked.connect(self.addNewRowToWorkerTable)
@@ -73,15 +75,23 @@ class MainWindow(QMainWindow):
         self.cancelAddingNewWorkerButton = QPushButton("Отмена")
         self.cancelAddingNewWorkerButton.setEnabled(False)
         self.cancelAddingNewWorkerButton.clicked.connect(self.cancelAdding)
+
         workerListToolsLayout.addWidget(self.addNewWorkerButton)
         workerListToolsLayout.addWidget(self.saveNewWorkerButton)
         workerListToolsLayout.addWidget(self.cancelAddingNewWorkerButton)
         workerListToolsLayout.addWidget(self.removeWorkerButton)
+        Utils.traverseAllWidgetsInLayoutRec(
+            workerListToolsLayout,
+            lambda but: but.setSizePolicy(QSizePolicy.Minimum,
+                                          QSizePolicy.Expanding))
 
         # История доступа
 
         historyAccessLayout.addWidget(QtWidgets.QLabel("История получения доступа сотрудниками"))
         self.historyAccessTable = QtWidgets.QTableWidget()
+        self.historyAccessTable.setStyleSheet(
+            """background-color: %s;"""
+            % (Globals.toStr(Globals.TABLE_COLOR)))
         self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         historyAccessLayout.addWidget(self.historyAccessTable)
 
