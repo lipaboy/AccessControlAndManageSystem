@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 import Globals
 from Utils import *
 
+
 class KeyboardWidget(QDialog):
     def __init__(self, parent=None, isFullScreen=False):
         super(KeyboardWidget, self).__init__(parent)

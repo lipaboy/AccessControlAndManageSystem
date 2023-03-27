@@ -27,12 +27,12 @@ class MainWindow(QMainWindow):
 
         # Toolbar
 
-        self.dataEnterDialog = QtWidgets.QInputDialog()
-        tryToGetAccessAction = QtWidgets.QAction('Получить доступ', self)
-        tryToGetAccessAction.triggered.connect(self.tryToGetAccess)
-
-        self.getAccessBar = self.addToolBar('Получить доступ')
-        self.getAccessBar.addAction(tryToGetAccessAction)
+        # self.dataEnterDialog = QtWidgets.QInputDialog()
+        # tryToGetAccessAction = QtWidgets.QAction('Получить доступ', self)
+        # tryToGetAccessAction.triggered.connect(self.tryToGetAccessDialog)
+        #
+        # self.getAccessBar = self.addToolBar('Получить доступ')
+        # self.getAccessBar.addAction(tryToGetAccessAction)
 
         # Main layouts
 
@@ -69,12 +69,12 @@ class MainWindow(QMainWindow):
         self.addNewWorkerButton = QPushButton("Добавить")
         self.addNewWorkerButton.clicked.connect(self.addNewRowToWorkerTable)
         self.saveNewWorkerButton = QPushButton("Сохранить")
-        self.saveNewWorkerButton.setEnabled(False)
+        self.saveNewWorkerButton.setVisible(False)
         self.saveNewWorkerButton.clicked.connect(self.saveNewWorker)
         self.removeWorkerButton = QPushButton("Удалить")
         self.removeWorkerButton.clicked.connect(self.removeWorker)
         self.cancelAddingNewWorkerButton = QPushButton("Отмена")
-        self.cancelAddingNewWorkerButton.setEnabled(False)
+        self.cancelAddingNewWorkerButton.setVisible(False)
         self.cancelAddingNewWorkerButton.clicked.connect(self.cancelAdding)
 
         workerListToolsLayout.addWidget(self.addNewWorkerButton)
@@ -83,14 +83,14 @@ class MainWindow(QMainWindow):
         workerListToolsLayout.addWidget(self.removeWorkerButton)
         Utils.traverseAllWidgetsInLayoutRec(
             workerListToolsLayout,
-            lambda but: 
-                but.setSizePolicy(QSizePolicy.Minimum,
-                                          QSizePolicy.Expanding))
+            lambda but:
+            but.setSizePolicy(QSizePolicy.Minimum,
+                              QSizePolicy.Expanding))
 
         Utils.traverseAllWidgetsInLayoutRec(
             workerListToolsLayout,
-            lambda but: 
-                but.setFont(QFont('Arial', 18)))
+            lambda but:
+            but.setFont(QFont('Arial', 18)))
 
         # История доступа
 
@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         self.historyAccessTable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         historyAccessLayout.addWidget(self.historyAccessTable)
 
-        self.controller = AccessController.AccessController(dbFilePath)
+        self.accessController = AccessController.AccessController(dbFilePath)
         self.updateWorkerList()
         self.updateHistory()
 
@@ -113,6 +113,8 @@ class MainWindow(QMainWindow):
         widget = QtWidgets.QWidget()
         widget.setLayout(mainLayout)
         self.setCentralWidget(widget)
+
+        self.crutch = False
 
     @pyqtSlot()
     def itemStartEditing(self):
@@ -135,18 +137,18 @@ class MainWindow(QMainWindow):
             self.mode = newMode
             self.workerListTable.cellChanged.connect(self.changeField)
             # self.workerListTable.doubleClicked.connect(self.itemStartEditing)
-            self.addNewWorkerButton.setEnabled(True)
-            self.saveNewWorkerButton.setEnabled(False)
-            self.cancelAddingNewWorkerButton.setEnabled(False)
-            self.removeWorkerButton.setEnabled(True)
+            self.addNewWorkerButton.setVisible(True)
+            self.saveNewWorkerButton.setVisible(False)
+            self.cancelAddingNewWorkerButton.setVisible(False)
+            self.removeWorkerButton.setVisible(True)
         elif newMode == 'Add':
             self.mode = newMode
             self.workerListTable.cellChanged.disconnect()
             # self.workerListTable.doubleClicked.disconnect()
-            self.addNewWorkerButton.setEnabled(False)
-            self.saveNewWorkerButton.setEnabled(True)
-            self.cancelAddingNewWorkerButton.setEnabled(True)
-            self.removeWorkerButton.setEnabled(False)
+            self.addNewWorkerButton.setVisible(False)
+            self.saveNewWorkerButton.setVisible(True)
+            self.cancelAddingNewWorkerButton.setVisible(True)
+            self.removeWorkerButton.setVisible(False)
         pass
 
     @pyqtSlot()
@@ -159,7 +161,7 @@ class MainWindow(QMainWindow):
     def removeWorker(self):
         row = self.workerListTable.currentItem().row()
         cardKey = int(self.workerListTable.item(row, 0).text())
-        self.controller.removeWorker(cardKey)
+        self.accessController.removeWorker(cardKey)
         self.updateWorkerList()
         pass
 
@@ -173,26 +175,30 @@ class MainWindow(QMainWindow):
                 row, column = item.row(), item.column()
                 cardKey = int(self.workerListTable.item(row, column - 1).text())
                 if column == 1:
-                    self.controller.renameWorker(cardKey, newValue)
+                    self.accessController.renameWorker(cardKey, newValue)
                 self.updateWorkerList()
                 self.updateHistory()
-
-    def runKeyboard(self):
-        # Запускаем на малине стороннюю виртуальную клавиатуру
-        # if os.uname()[4].startswith("arm"):
-        #     subprocess.Popen(['/usr/bin/florence'])
-        pass
 
     @pyqtSlot()
     def addNewRowToWorkerTable(self):
         # self.controller.addNewWorkerCard(int(self.keyEdit.text()), self.nameEdit.text(), 1)
         self.setMode('Add')
-        self.runKeyboard()
         table = self.workerListTable
         newRow = table.rowCount()
         table.insertRow(newRow)
         for i in range(0, table.columnCount() - 1):
             table.setItem(newRow, i, QtWidgets.QTableWidgetItem(''))
+
+    def addNewWorker(self,
+                     cardId: int):
+        self.setMode('Add')
+        table = self.workerListTable
+        newRow = table.rowCount()
+        table.insertRow(newRow)
+        table.setItem(newRow, 0, QtWidgets.QTableWidgetItem(str(cardId)))
+        for i in range(1, table.columnCount() - 1):
+            table.setItem(newRow, i, QtWidgets.QTableWidgetItem(''))
+        pass
 
     @pyqtSlot()
     def saveNewWorker(self):
@@ -202,14 +208,14 @@ class MainWindow(QMainWindow):
             places = list(map(int, table.item(row, 2).text().split(",")))
         else:
             places = []
-        self.controller.addNewWorkerCard(int(table.item(row, 0).text()),
-                                         table.item(row, 1).text(),
-                                         places
-                                         )
+        self.accessController.addNewWorkerCard(int(table.item(row, 0).text()),
+                                               table.item(row, 1).text(),
+                                               places
+                                               )
         self.setMode('Edit')
 
     def updateWorkerList(self):
-        workerList = self.controller.getWorkerList()
+        workerList = self.accessController.getWorkerList()
         table = self.workerListTable
         table.clear()
         table.setRowCount(len(workerList))
@@ -237,7 +243,7 @@ class MainWindow(QMainWindow):
             row += 1
 
     def updateHistory(self):
-        historyList = self.controller.getHistory()
+        historyList = self.accessController.getHistory()
         table = self.historyAccessTable
         table.clear()
         table.setRowCount(len(historyList))
@@ -255,7 +261,7 @@ class MainWindow(QMainWindow):
             row += 1
 
     @pyqtSlot()
-    def tryToGetAccess(self):
+    def tryToGetAccessDialog(self):
         self.runKeyboard()
 
         cardKey, ok1 = QtWidgets.QInputDialog \
@@ -266,9 +272,47 @@ class MainWindow(QMainWindow):
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle("Оповещение")
         if ok1 and ok2:
-            if self.controller.tryToGetAccess(cardKey, placeId):
+            if self.accessController.tryToGetAccess(cardKey, placeId):
                 msg.setText("Успешно предоставлен доступ")
                 self.updateHistory()
             else:
                 msg.setText("Доступ запрещён")
             msg.exec()
+
+    def tryToGetAccess(self,
+                       cardId: int,
+                       placeId: int):
+        msg = QtWidgets.QMessageBox(self)
+        msg.setWindowTitle("Оповещение")
+        if self.accessController.tryToGetAccess(cardId, placeId):
+            msg.setText("Успешно предоставлен доступ")
+            self.updateHistory()
+        else:
+            msg.setText("Доступ запрещён")
+        msg.exec()
+
+    @pyqtSlot(int)
+    def handleCard(self,
+                   cardId: int):
+        if self.mode == 'Edit' and not self.crutch:
+            self.crutch = True
+            workers = self.accessController.getWorkerList()
+            isFound = False
+            for w in workers:
+                if w.key == cardId:
+                    self.tryToGetAccess(cardId, 1)
+                    isFound = True
+                    break
+
+            if not isFound:
+                msg = QtWidgets.QMessageBox()
+                msg.setWindowTitle("Доступ")
+                msg.setText("Добавить нового сотрудника?")
+                msg.setStandardButtons(msg.StandardButton.Ok | msg.StandardButton.Cancel)
+                if msg.exec() == msg.StandardButton.Ok:
+                    self.addNewWorker(cardId)
+            self.crutch = False
+        pass
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        pass
